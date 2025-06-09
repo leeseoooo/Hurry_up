@@ -5,6 +5,8 @@ import 'mypage_screen.dart';
 import 'schedule_screen.dart';
 
 class MyApp extends StatefulWidget {
+
+  @override
   MyAppState createState() => MyAppState();
 }
 
