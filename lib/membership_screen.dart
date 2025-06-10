@@ -26,6 +26,7 @@ class join_membershipScreen extends StatelessWidget {
   final TextEditingController e_mailController = TextEditingController();
   final TextEditingController birthController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+
   late List<List<String>> checkLogin;
 
   @override
