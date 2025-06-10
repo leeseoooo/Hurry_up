@@ -37,6 +37,7 @@ class _addPersonScreenState extends State<addPersonScreen> {
   final TextEditingController finishDateTimeController = TextEditingController();
   double? selectedLat;
   double? selectedLng;
+  bool switchValue = false;
 
   Future<void> pickStartDateTime() async {
     DateTime? date = await showDatePicker(
@@ -154,6 +155,21 @@ class _addPersonScreenState extends State<addPersonScreen> {
                   });
                 }
               },
+            ),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Text(' '),
+                Icon(Icons.alarm),
+                Text('  알림 설정                                     ', style: TextStyle(fontSize: 20)),
+                Switch(
+                  value: switchValue,
+                  onChanged: (bool value) {
+                    setState(() {
+                      switchValue = value;
+                    });
+                  },
+                ),]
             ),
             SizedBox(height: 16),
             ElevatedButton(
