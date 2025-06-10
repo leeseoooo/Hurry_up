@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'db_function.dart';
 import 'schedule_screen.dart';
 import 'login_screen.dart';
+import 'map_screen.dart';
 
 class set_schedule extends StatelessWidget {
   Widget build(BuildContext context) {
@@ -33,6 +35,8 @@ class _addPersonScreenState extends State<addPersonScreen> {
   final TextEditingController placeController = TextEditingController();
   final TextEditingController startDateTimeController = TextEditingController();
   final TextEditingController finishDateTimeController = TextEditingController();
+  double? selectedLat;
+  double? selectedLng;
 
   Future<void> pickStartDateTime() async {
     DateTime? date = await showDatePicker(
@@ -76,16 +80,19 @@ class _addPersonScreenState extends State<addPersonScreen> {
     });
   }
 
-  Future<bool> addScheduletoDB(String name, String start, String finish, String place) async {
+  Future<bool> addScheduletoDB(String name, String start, String finish, String place, double Lat, double Lng) async {
     final conn = await connect_db();
     var result = await conn.execute(
-      "INSERT INTO timetable (name, start_time, finish_time, place, ID) VALUES (:new_name, :new_start, :new_finish, :new_place, :id)",
+      "INSERT INTO timetable (name, start_time, finish_time, place, ID, lat, lng) "
+          "VALUES (:new_name, :new_start, :new_finish, :new_place, :id, :new_lat, :new_lng)",
       {
         "new_name": name,
         "new_start": start,
         "new_finish": finish,
         "new_place": place,
         "id": user_id,
+        "new_lat": Lat,
+        "new_lng": Lng,
       },
     );
     await disconnect_db(conn);
@@ -129,7 +136,25 @@ class _addPersonScreenState extends State<addPersonScreen> {
             SizedBox(height: 16),
             buildInputField(finishDateTimeController, '일정 끝', Icons.timelapse, onTap: pickFinishDateTime),
             SizedBox(height: 16),
-            buildInputField(placeController, '장소', Icons.place_outlined),
+            buildInputField(
+              placeController,
+              '장소',
+              Icons.place_outlined,
+              onTap: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => MapScreen()),
+                );
+
+                if (result != null) {
+                  setState(() {
+                    selectedLat = result['lat'];
+                    selectedLng = result['lng'];
+                    placeController.text = result['placeName'];
+                  });
+                }
+              },
+            ),
             SizedBox(height: 16),
             ElevatedButton(
                 onPressed: () async {
@@ -145,11 +170,28 @@ class _addPersonScreenState extends State<addPersonScreen> {
                     showMessage('시작 시간은 종료 시간보다 빨라야 합니다.');
                     return;
                   }
+                  try {
+                    List<Location> locations = await locationFromAddress(placeController.text);
+                    if (locations.isNotEmpty) {
+                      selectedLat = locations.first.latitude;
+                      selectedLng = locations.first.longitude;
+                      print('위도: $selectedLat, 경도: $selectedLng');
+                    } else {
+                      showMessage('장소를 찾을 수 없습니다.');
+                      return;
+                    }
+                  } catch (e) {
+                    showMessage('주소 변환 중 오류 발생: $e');
+                    return;
+                  }
+
                   bool success = await addScheduletoDB(
                     nameController.text,
                     start,
                     finish,
                     placeController.text,
+                      selectedLat!,
+                      selectedLng!,
                   );
                   if (!mounted) return;
                   if (success) {
