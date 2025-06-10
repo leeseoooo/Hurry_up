@@ -50,15 +50,15 @@ class MyAppState extends State<MyApp> {
             BottomNavigationBarItem(
                 icon: Icon(Icons.calendar_month),
                 label: 'Schedule',
-                backgroundColor: Colors.green),
+                backgroundColor: Color(0xFF6DA168)),
             BottomNavigationBarItem(
                 icon: Icon(Icons.home),
                 label: 'Home',
-                backgroundColor: Colors.red),
+                backgroundColor: Color(0xB15FBFFF)),
             BottomNavigationBarItem(
                 icon: Icon(Icons.person),
                 label: 'Mypage',
-                backgroundColor: Colors.purple)
+                backgroundColor: Color(0xFFBFA2DB))
           ],
           currentIndex: _selectedIndex,
           selectedItemColor: Colors.yellowAccent,
