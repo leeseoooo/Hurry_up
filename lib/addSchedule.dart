@@ -81,11 +81,11 @@ class _addPersonScreenState extends State<addPersonScreen> {
     });
   }
 
-  Future<bool> addScheduletoDB(String name, String start, String finish, String place, double Lat, double Lng) async {
+  Future<bool> addScheduletoDB(String name, String start, String finish, String place, double Lat, double Lng, bool switch_val) async {
     final conn = await connect_db();
     var result = await conn.execute(
-      "INSERT INTO timetable (name, start_time, finish_time, place, ID, lat, lng) "
-          "VALUES (:new_name, :new_start, :new_finish, :new_place, :id, :new_lat, :new_lng)",
+      "INSERT INTO timetable (name, start_time, finish_time, place, ID, lat, lng, switch_value) "
+          "VALUES (:new_name, :new_start, :new_finish, :new_place, :id, :new_lat, :new_lng, :val_switch)",
       {
         "new_name": name,
         "new_start": start,
@@ -94,6 +94,7 @@ class _addPersonScreenState extends State<addPersonScreen> {
         "id": user_id,
         "new_lat": Lat,
         "new_lng": Lng,
+        "val_switch": switch_val,
       },
     );
     await disconnect_db(conn);
@@ -208,6 +209,7 @@ class _addPersonScreenState extends State<addPersonScreen> {
                     placeController.text,
                       selectedLat!,
                       selectedLng!,
+                    switchValue,
                   );
                   if (!mounted) return;
                   if (success) {
