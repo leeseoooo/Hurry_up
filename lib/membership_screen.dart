@@ -57,14 +57,15 @@ class join_membershipScreen extends StatelessWidget {
               width: 450,
               child: ElevatedButton(
                 onPressed: () async {
-                  await addPersontoDB(
-                    newidController.text,
-                    newpasswordController.text,
-                    newnameController.text,
-                    e_mailController.text,
-                    birthController.text,
-                    phoneController.text,
+                  bool success = await DBService().addPersonToDB(
+                    newid: newidController.text,
+                    newPassword: newpasswordController.text,
+                    newname: newnameController.text,
+                    newEmail: e_mailController.text,
+                    birth: birthController.text,
+                    phone: phoneController.text,
                   );
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => login()),
@@ -101,33 +102,5 @@ class join_membershipScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<bool> addPersontoDB(
-      String newid,
-      String newPassword,
-      String newname,
-      String new_email,
-      String Birth,
-      String phone,
-      ) async {
-    bool inData = false;
-    final conn = await connect_db();
-    var result = await conn.execute(
-      "INSERT INTO member (ID, password, name, email, birth, phone) VALUES (:new_id, :newPassword, :new_name, :new_email, :birth, :phone)",
-      {
-        "new_id": newid,
-        "newPassword": newPassword,
-        "new_name": newname,
-        "new_email": new_email,
-        "birth": Birth,
-        "phone": phone,
-      },
-    );
-    if (result != null) {
-      inData = true;
-    }
-    await disconnect_db(conn);
-    return inData;
   }
 }

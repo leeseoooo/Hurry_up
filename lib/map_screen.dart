@@ -31,23 +31,23 @@ class _MapScreenState extends State<MapScreen> {
       List<Location> locations = await locationFromAddress(
         input,
         localeIdentifier: 'ko',
-      );
+      ).timeout(Duration(seconds: 10));
+
       if (locations.isNotEmpty) {
         final location = locations.first;
         LatLng newLatLng = LatLng(location.latitude, location.longitude);
 
-        String place = placeNameController.text;
-
         setState(() {
           selectedLocation = newLatLng;
-          selectedplace = place;
+          selectedplace = input;
+          placeNameController.text = input;
         });
 
         mapController?.animateCamera(CameraUpdate.newLatLngZoom(newLatLng, 16));
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('주소를 찾을 수 없습니다.')),
+        SnackBar(content: Text('주소 검색 실패: $e')),
       );
     }
   }

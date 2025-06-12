@@ -81,26 +81,6 @@ class _addPersonScreenState extends State<addPersonScreen> {
     });
   }
 
-  Future<bool> addScheduletoDB(String name, String start, String finish, String place, double Lat, double Lng, bool switch_val) async {
-    final conn = await connect_db();
-    var result = await conn.execute(
-      "INSERT INTO timetable (name, start_time, finish_time, place, ID, lat, lng, switch_value) "
-          "VALUES (:new_name, :new_start, :new_finish, :new_place, :id, :new_lat, :new_lng, :val_switch)",
-      {
-        "new_name": name,
-        "new_start": start,
-        "new_finish": finish,
-        "new_place": place,
-        "id": user_id,
-        "new_lat": Lat,
-        "new_lng": Lng,
-        "val_switch": switch_val,
-      },
-    );
-    await disconnect_db(conn);
-    return result != null;
-  }
-
   void showMessage(String message) {
     if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -196,35 +176,22 @@ class _addPersonScreenState extends State<addPersonScreen> {
                     showMessage('시작 시간은 종료 시간보다 빨라야 합니다.');
                     return;
                   }
-                  try {
-                    List<Location> locations = await locationFromAddress(placeController.text);
-                    if (locations.isNotEmpty) {
-                      selectedLat = locations.first.latitude;
-                      selectedLng = locations.first.longitude;
-                      print('위도: $selectedLat, 경도: $selectedLng');
-                    } else {
-                      showMessage('장소를 찾을 수 없습니다.');
-                      return;
-                    }
-                  } catch (e) {
-                    showMessage('주소 변환 중 오류 발생: $e');
-                    return;
-                  }
 
                   if (selectedLat == null || selectedLng == null) {
                     showMessage('장소를 지도에서 선택해주세요.');
                     return;
                   }
 
-                  bool success = await addScheduletoDB(
-                    nameController.text,
-                    start,
-                    finish,
-                    placeController.text,
-                      selectedLat!,
-                      selectedLng!,
-                    switchValue,
+                  bool success = await DBService().addScheduleToDB(
+                    name: nameController.text,
+                    start: start,
+                    finish: finish,
+                    place: placeController.text,
+                    lat: selectedLat!,
+                    lng: selectedLng!,
+                    switchValue: switchValue,
                   );
+
                   if (!mounted) return;
                   if (success) {
                     Navigator.push(

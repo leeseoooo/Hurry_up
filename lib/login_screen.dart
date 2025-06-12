@@ -77,7 +77,7 @@ class Log_State extends StatelessWidget {
                     margin: EdgeInsets.symmetric(horizontal: 5),
                     child: ElevatedButton(
                       onPressed: () async {
-                        bool success = await checkPassword(
+                        bool success = await DBService().checkPassword(
                           idController.text,
                           passwordController.text,
                         );
@@ -135,21 +135,5 @@ class Log_State extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<bool> checkPassword(String ID, String Password) async {
-    bool checklogin = false;
-    final conn = await connect_db();
-    var result = await conn.execute('SELECT * FROM hurry_up.member');
-    for (final row in result.rows) {
-      String id = row.colAt(0) ?? 'noID';
-      String password = row.colAt(1) ?? 'noPassword';
-      if (id == ID && password == Password) {
-        checklogin = true;
-        user_id = id;
-      }
-    }
-    await disconnect_db(conn);
-    return checklogin;
   }
 }
