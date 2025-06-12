@@ -25,50 +25,39 @@ class _MyPageState extends State<MyPage> {
   }
 
   Future<void> fetchUserInfo() async {
-    final conn = await connect_db();
-    var result = await conn.execute(
-      'SELECT ID, password, name, email, birth, phone FROM hurry_up.member WHERE ID = :uid',
-      {'uid': user_id},
-    );
+    final data = await DBService().fetchUserInfo(user_id);
 
-    if (result.rows.isNotEmpty) {
-      final row = result.rows.first;
-      idController.text = row.colAt(0) ?? '';
-      passwordController.text = row.colAt(1) ?? '';
-      nameController.text = row.colAt(2) ?? '';
-      emailController.text = row.colAt(3) ?? '';
-      final Birth = row.colAt(4) ?? '';
-      String formattedBirth = Birth;
+    if (data.isNotEmpty) {
+      idController.text = data['id']!;
+      passwordController.text = data['password']!;
+      nameController.text = data['name']!;
+      emailController.text = data['email']!;
+
+      final birth = data['birth']!;
       try {
-        DateTime birthDate = DateTime.parse(Birth);
-        formattedBirth = DateFormat('yyyy-MM-dd').format(birthDate);
+        DateTime birthDate = DateTime.parse(birth);
+        birthController.text = DateFormat('yyyy-MM-dd').format(birthDate);
       } catch (e) {
-        print("생일 날짜 포맷 오류: $e");
+        birthController.text = birth;
       }
-      birthController.text = formattedBirth;
-      phoneController.text = row.colAt(5) ?? '';
+
+      phoneController.text = data['phone']!;
     }
 
-    await disconnect_db(conn);
     setState(() {
       isLoading = false;
     });
   }
 
   Future<void> updateUserInfo() async {
-    final conn = await connect_db();
-    await conn.execute(
-      'UPDATE hurry_up.member SET password = :pwd, name = :name, email = :email, birth = :birth, phone = :phone WHERE ID = :uid',
-      {
-        'pwd': passwordController.text,
-        'name': nameController.text,
-        'email': emailController.text,
-        'birth': birthController.text,
-        'phone': phoneController.text,
-        'uid': idController.text,
-      },
+    await DBService().updateUserInfo(
+      id: idController.text,
+      password: passwordController.text,
+      name: nameController.text,
+      email: emailController.text,
+      birth: birthController.text,
+      phone: phoneController.text,
     );
-    await disconnect_db(conn);
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('정보가 수정되었습니다')),

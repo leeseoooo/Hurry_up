@@ -30,7 +30,7 @@ class FindAccount extends StatelessWidget {
               SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  String result = await findByEmail(
+                  String result = await DBService().findByEmail(
                     nameController.text,
                     emailController.text,
                   );
@@ -51,7 +51,7 @@ class FindAccount extends StatelessWidget {
               SizedBox(height: 10),
               ElevatedButton(
                 onPressed: () async {
-                  String result = await findByPhone(
+                  String result = await DBService().findByPhone(
                     nameController.text,
                     phoneController.text,
                   );
@@ -69,37 +69,5 @@ class FindAccount extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<String> findByEmail(String name, String email) async {
-    final conn = await connect_db();
-    var result = await conn.execute(
-      "SELECT ID, password FROM member WHERE name = :name AND email = :email",
-      {"name": name, "email": email},
-    );
-    await disconnect_db(conn);
-    if (result.rows.isNotEmpty) {
-      String id = result.rows.first.colAt(0) ?? '';
-      String pw = result.rows.first.colAt(1) ?? '';
-      return 'ID: $id\n비밀번호: $pw';
-    } else {
-      return '일치하는 계정을 찾을 수 없습니다.';
-    }
-  }
-
-  Future<String> findByPhone(String name, String phone) async {
-    final conn = await connect_db();
-    var result = await conn.execute(
-      "SELECT ID, password FROM member WHERE name = :name AND phone = :phone",
-      {"name": name, "phone": phone},
-    );
-    await disconnect_db(conn);
-    if (result.rows.isNotEmpty) {
-      String id = result.rows.first.colAt(0) ?? '';
-      String pw = result.rows.first.colAt(1) ?? '';
-      return 'ID: $id\n비밀번호: $pw';
-    } else {
-      return '일치하는 계정을 찾을 수 없습니다.';
-    }
   }
 }

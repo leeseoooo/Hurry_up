@@ -38,7 +38,7 @@ class _ScheduleState extends State<schedule> {
     initNotifications();
 
     requestNotificationPermission().then((_) {
-      dbConnector().then((_) {
+      loadSchedules().then((_) {
         startScheduleCheckTimer();
       });
     });
@@ -118,46 +118,10 @@ class _ScheduleState extends State<schedule> {
     await flutterLocalNotificationsPlugin.initialize(initSettings);
   }
 
-  Future<void> dbConnector() async {
-    print("Connecting to mysql server...");
-    schedules.clear();
-    final conn = await connect_db();
-    var result = await conn.execute('SELECT name, start_time, finish_time, place, ID, lat, lng, switch_value '
-        'FROM hurry_up.timetable WHERE ID = :uid', {'uid': user_id.toString()},
-    );
-
-    for (final row in result.rows) {
-      String name = row.colAt(0) ?? 'noName';
-      String start_time = row.colAt(1) ?? 'Unknown';
-      String finish_time = row.colAt(2) ?? 'Unknown';
-      String place = row.colAt(3) ?? 'noPlace';
-      String ID = row.colAt(4) ?? 'noID';
-      double lat = double.tryParse(row.colAt(5)?.toString() ?? '') ?? 0.0;
-      double lng = double.tryParse(row.colAt(6)?.toString() ?? '') ?? 0.0;
-      bool switch_value = (row.colAt(7)?.toString() == '1');
-
-      DateTime now = DateTime.now().toUtc().add(Duration(hours: 9));
-      DateTime todayStart = DateTime(now.year, now.month, now.day, 0, 0, 0);
-      DateTime todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
-
-      try {
-        DateTime startTime = DateTime.parse(start_time);
-        DateTime finishTime = DateTime.parse(finish_time);
-
-        // 오늘 날짜 범위 안에 일정이 걸쳐 있을 때만 추가
-        if (finishTime.isAfter(todayStart) && startTime.isBefore(todayEnd)) {
-          schedules.add(Timetable(name, start_time, finish_time, place, ID, lat, lng, switch_value));
-        }
-      } catch (e) {
-        print('날짜 파싱 오류: $e');
-      }
-    }
-
-    await disconnect_db(conn);
-    setState(() {
-      isLoading = false;
-    });
-
+  Future<void> loadSchedules() async {
+    setState(() => isLoading = true);
+    schedules = await DBService().fetchTodaySchedules(user_id);
+    setState(() => isLoading = false);
   }
 
   Future<void> shareScheduleKakao(Timetable schedule) async {
@@ -330,7 +294,7 @@ class _ScheduleState extends State<schedule> {
                         ),
                         ElevatedButton(
                           onPressed: () async {
-                            await deleteScheduleFromDB(schedule.start_time);
+                            await DBService().deleteSchedule(schedule.start_time, user_id);
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(builder: (context) => (set_schedule())), // 이동할 화면 위젯
@@ -348,7 +312,7 @@ class _ScheduleState extends State<schedule> {
                         ),
                         ElevatedButton(
                           onPressed: () async {
-                            final success = await deleteScheduleFromDB(schedule.start_time);
+                            final success = await DBService().deleteSchedule(schedule.start_time, user_id);
                             if (success) {
                               Navigator.pushReplacement(
                                 context,
@@ -392,7 +356,7 @@ class _ScheduleState extends State<schedule> {
             setState(() {
               isLoading = true;
             });
-            dbConnector();
+            loadSchedules();
           });
         },
         child: const Icon(Icons.add),
