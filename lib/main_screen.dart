@@ -16,7 +16,7 @@ class MyAppState extends State<MyApp> {
   List<Widget> _widgetOptions = <Widget>[
     schedule(),
     home(),
-    mypage()
+    MyPage()
   ];
 
   void _onItemTapped(int index) {

@@ -12,7 +12,7 @@ class home extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'score',
+                  'Welcome!',
                   style: TextStyle(color: Colors.black, fontSize: 30),
                 ),
 
