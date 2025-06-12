@@ -136,7 +136,7 @@ class _ScheduleState extends State<schedule> {
       double lng = double.tryParse(row.colAt(6)?.toString() ?? '') ?? 0.0;
       bool switch_value = (row.colAt(7)?.toString() == '1');
 
-      DateTime now = DateTime.now();
+      DateTime now = DateTime.now().toUtc().add(Duration(hours: 9));
       DateTime todayStart = DateTime(now.year, now.month, now.day, 0, 0, 0);
       DateTime todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
 
