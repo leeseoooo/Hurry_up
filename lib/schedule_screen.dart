@@ -311,16 +311,69 @@ class _ScheduleState extends State<schedule> {
                         ],
                       ),
                     ),
-                    ElevatedButton(
-                      onPressed: () {
-                        shareScheduleKakao(schedule);
-                      },
-                      child: Text("공유"),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        textStyle: TextStyle(fontSize: 12),
-                      ),
-                    ),
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ElevatedButton(
+                          onPressed: () {
+                            shareScheduleKakao(schedule);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                            minimumSize: Size(60, 24),
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            textStyle: TextStyle(fontSize: 10),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text("공유"),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            await deleteScheduleFromDB(schedule.start_time);
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (context) => (set_schedule())), // 이동할 화면 위젯
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.amber[100],
+                            foregroundColor: Colors.black,
+                            minimumSize: Size(60, 24),
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            textStyle: TextStyle(fontSize: 10),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text("수정"),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final success = await deleteScheduleFromDB(schedule.start_time);
+                            if (success) {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (context) => set_schedule()),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('삭제에 실패했습니다.')),
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red[100],
+                            foregroundColor: Colors.black,
+                            minimumSize: Size(60, 24),
+                            padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                            textStyle: TextStyle(fontSize: 10),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: Text("삭제"),
+                        ),
+
+                      ],
+                    )
+
                   ],
                 ),
               );
