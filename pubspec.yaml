@@ -41,6 +41,7 @@ dependencies:
   kakao_flutter_sdk: ^1.4.2
   flutter_dotenv: ^5.0.2
   url_launcher: ^6.2.5
+  permission_handler: ^11.0.1
 
 
 dependency_overrides:

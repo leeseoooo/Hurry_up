@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'addSchedule.dart';
 import 'db_function.dart';
@@ -9,7 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:kakao_flutter_sdk_share/kakao_flutter_sdk_share.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:permission_handler/permission_handler.dart';
 
 class Timetable {
   String name;
@@ -37,9 +36,19 @@ class _ScheduleState extends State<schedule> {
   void initState() {
     super.initState();
     initNotifications();
-    dbConnector().then((_) {
-      startScheduleCheckTimer(); // 10분마다 체크
+
+    requestNotificationPermission().then((_) {
+      dbConnector().then((_) {
+        startScheduleCheckTimer();
+      });
     });
+  }
+
+  Future<void> requestNotificationPermission() async {
+    final status = await Permission.notification.status;
+    if (!status.isGranted) {
+      await Permission.notification.request();
+    }
   }
 
   Future<void> sendNotification(String title, String body) async {
@@ -70,6 +79,8 @@ class _ScheduleState extends State<schedule> {
 
   Future<void> checkScheduleAndNotify(Timetable schedule) async {
     try {
+      if (!schedule.switch_value) return;
+
       Position current = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
@@ -81,16 +92,17 @@ class _ScheduleState extends State<schedule> {
         schedule.lng,
       );
 
-      int walkMinutes = (distance / 1.33 / 60).round(); // 평균 1.33m/s
+      int walkMinutes = (distance / 1.33 / 60).round();
       DateTime startTime = DateTime.parse(schedule.start_time);
       int minutesUntilStart = startTime.difference(DateTime.now()).inMinutes;
 
-      if (minutesUntilStart <= 60 && walkMinutes > minutesUntilStart) {
-        /*await sendNotification(
-          "출발 알림",
-          "${schedule.name} 일정에 ${walkMinutes}분 걸립니다.\n지금 출발하지 않으면 지각할 수 있어요!",
-        );*/
-        print('출발');
+      int bufferMinutes = 5; // 도착 전 여유
+
+      if (minutesUntilStart <= 60 && (walkMinutes + bufferMinutes) >= minutesUntilStart) {
+        await sendNotification(
+          "${schedule.name}",
+          "예상 도보 시간: ${walkMinutes}분\n남은 시간: ${minutesUntilStart}분\n장소: ${schedule.place}",
+        );
       }
     } catch (e) {
       print("거리 계산 실패: $e");
@@ -110,7 +122,7 @@ class _ScheduleState extends State<schedule> {
     print("Connecting to mysql server...");
     schedules.clear();
     final conn = await connect_db();
-    var result = await conn.execute('SELECT name, start_time, finish_time, place, lat, lng, switch_value '
+    var result = await conn.execute('SELECT name, start_time, finish_time, place, ID, lat, lng, switch_value '
         'FROM hurry_up.timetable WHERE ID = :uid', {'uid': user_id.toString()},
     );
 
@@ -120,9 +132,10 @@ class _ScheduleState extends State<schedule> {
       String finish_time = row.colAt(2) ?? 'Unknown';
       String place = row.colAt(3) ?? 'noPlace';
       String ID = row.colAt(4) ?? 'noID';
-      double lat = double.tryParse(row.colAt(4)?.toString() ?? '') ?? 0.0;
-      double lng = double.tryParse(row.colAt(5)?.toString() ?? '') ?? 0.0;
-      bool switch_value = (row.colAt(6)?.toString() == '1');
+      double lat = double.tryParse(row.colAt(5)?.toString() ?? '') ?? 0.0;
+      double lng = double.tryParse(row.colAt(6)?.toString() ?? '') ?? 0.0;
+      bool switch_value = (row.colAt(7)?.toString() == '1');
+
       DateTime now = DateTime.now();
       DateTime todayStart = DateTime(now.year, now.month, now.day, 0, 0, 0);
       DateTime todayEnd = DateTime(now.year, now.month, now.day, 23, 59, 59);
