@@ -124,6 +124,13 @@ class _addPersonScreenState extends State<addPersonScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    placeController.text = '';
+    selectedLat = null;
+    selectedLng = null;
+  }
+
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
@@ -201,6 +208,11 @@ class _addPersonScreenState extends State<addPersonScreen> {
                     }
                   } catch (e) {
                     showMessage('주소 변환 중 오류 발생: $e');
+                    return;
+                  }
+
+                  if (selectedLat == null || selectedLng == null) {
+                    showMessage('장소를 지도에서 선택해주세요.');
                     return;
                   }
 
