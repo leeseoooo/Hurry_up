@@ -15,4 +15,6 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+    <string name="kakao_native_app_key">77230116bc79bb715dd1c4743e89527f</string>
+    <string name="kakao_scheme">kakao77230116bc79bb715dd1c4743e89527f</string>
 </resources>
