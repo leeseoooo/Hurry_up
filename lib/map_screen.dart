@@ -108,14 +108,6 @@ class _MapScreenState extends State<MapScreen> {
             onPressed: _confirmLocation,
             child: Text('장소 설정'),
           ),
-          if (selectedplace != null)
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                '선택된 주소: $selectedplace',
-                style: TextStyle(fontSize: 16),
-              ),
-            ),
           Expanded(
             child: GoogleMap(
               initialCameraPosition: CameraPosition(

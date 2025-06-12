@@ -1,9 +1,15 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'addSchedule.dart';
 import 'db_function.dart';
 import 'package:intl/intl.dart';
 import 'login_screen.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:kakao_flutter_sdk_share/kakao_flutter_sdk_share.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 
 class Timetable {
   String name;
@@ -25,12 +31,79 @@ class schedule extends StatefulWidget {
 List<Timetable> schedules = [];
 class _ScheduleState extends State<schedule> {
   bool isLoading = true;
-
+  late FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin;
 
   @override
   void initState() {
     super.initState();
-    dbConnector();
+    initNotifications();
+    dbConnector().then((_) {
+      startScheduleCheckTimer(); // 10분마다 체크
+    });
+  }
+
+  Future<void> sendNotification(String title, String body) async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'schedule_channel_id',
+      'Schedule Alerts',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails notificationDetails = NotificationDetails(android: androidDetails);
+
+    await flutterLocalNotificationsPlugin.show(
+      0, // notification ID
+      title,
+      body,
+      notificationDetails,
+    );
+  }
+
+  void startScheduleCheckTimer() {
+    Timer.periodic(Duration(minutes: 10), (timer) {
+      for (var schedule in schedules) {
+        checkScheduleAndNotify(schedule);
+      }
+    });
+  }
+
+  Future<void> checkScheduleAndNotify(Timetable schedule) async {
+    try {
+      Position current = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      double distance = Geolocator.distanceBetween(
+        current.latitude,
+        current.longitude,
+        schedule.lat,
+        schedule.lng,
+      );
+
+      int walkMinutes = (distance / 1.33 / 60).round(); // 평균 1.33m/s
+      DateTime startTime = DateTime.parse(schedule.start_time);
+      int minutesUntilStart = startTime.difference(DateTime.now()).inMinutes;
+
+      if (minutesUntilStart <= 60 && walkMinutes > minutesUntilStart) {
+        /*await sendNotification(
+          "출발 알림",
+          "${schedule.name} 일정에 ${walkMinutes}분 걸립니다.\n지금 출발하지 않으면 지각할 수 있어요!",
+        );*/
+        print('출발');
+      }
+    } catch (e) {
+      print("거리 계산 실패: $e");
+    }
+  }
+
+  void initNotifications() async {
+    flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+    const AndroidInitializationSettings androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const InitializationSettings initSettings = InitializationSettings(android: androidInit);
+
+    await flutterLocalNotificationsPlugin.initialize(initSettings);
   }
 
   Future<void> dbConnector() async {
@@ -72,31 +145,69 @@ class _ScheduleState extends State<schedule> {
       isLoading = false;
     });
 
-    Future<void> checkScheduleAndNotify(Timetable schedule) async {
-      try {
-        Position current = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
+  }
 
-        double distance = Geolocator.distanceBetween(
-          current.latitude,
-          current.longitude,
-          schedule.lat,
-          schedule.lng,
-        );
+  Future<void> shareScheduleKakao(Timetable schedule) async {
+    try {
+      String formattedStart = DateFormat('yyyy.MM.dd HH:mm').format(DateTime.parse(schedule.start_time));
+      String formattedFinish = DateFormat('yyyy.MM.dd HH:mm').format(DateTime.parse(schedule.finish_time));
 
-        int walkMinutes = (distance / 1.33 / 60).round(); // 평균 1.33m/s
-        DateTime startTime = DateTime.parse(schedule.start_time);
-        int minutesUntilStart = startTime.difference(DateTime.now()).inMinutes;
+      final template = FeedTemplate(
+        content: Content(
+          title: '${schedule.name}',
+          description: '$formattedStart ~ $formattedFinish\n장소: ${schedule.place}',
+          imageUrl: Uri.parse('https://via.placeholder.com/300x200.png?text=Schedule'),
+          link: Link(
+            webUrl: Uri.parse('https://developers.kakao.com'),
+            mobileWebUrl: Uri.parse('https://developers.kakao.com'),
+          ),
+        ),
+      );
 
-        if (minutesUntilStart <= 60 && walkMinutes > minutesUntilStart) {
-          print('출발');
-        }
-      } catch (e) {
-        print("거리 계산 실패: $e");
+      final isAvailable = await ShareClient.instance.isKakaoTalkSharingAvailable();
+      if (isAvailable) {
+        await ShareClient.instance.shareDefault(template: template);
+      } else {
+        final uri = await WebSharerClient.instance.makeDefaultUrl(template: template);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       }
+    } catch (e) {
+      print("카카오 공유 오류: $e");
     }
+  }
 
+  Future<void> shareAllSchedulesKakao(List<Timetable> allSchedules) async {
+    try {
+      if (allSchedules.isEmpty) return;
+
+      String combinedText = allSchedules.map((schedule) {
+        String formattedStart = DateFormat('yyyy.MM.dd HH:mm').format(DateTime.parse(schedule.start_time));
+        String formattedFinish = DateFormat('yyyy.MM.dd HH:mm').format(DateTime.parse(schedule.finish_time));
+        return "- ${schedule.name}\n  ${formattedStart} ~ ${formattedFinish}\n  장소: ${schedule.place}";
+      }).join("\n\n");
+
+      final template = FeedTemplate(
+        content: Content(
+          title: "오늘의 전체 일정",
+          description: combinedText,
+          imageUrl: Uri.parse('https://via.placeholder.com/300x200.png?text=Schedules'),
+          link: Link(
+            webUrl: Uri.parse('https://developers.kakao.com'),
+            mobileWebUrl: Uri.parse('https://developers.kakao.com'),
+          ),
+        ),
+      );
+
+      final isAvailable = await ShareClient.instance.isKakaoTalkSharingAvailable();
+      if (isAvailable) {
+        await ShareClient.instance.shareDefault(template: template);
+      } else {
+        final uri = await WebSharerClient.instance.makeDefaultUrl(template: template);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      print("전체 일정 카카오 공유 오류: $e");
+    }
   }
 
   @override
@@ -124,10 +235,7 @@ class _ScheduleState extends State<schedule> {
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => set_schedule()),
-                );
+                shareAllSchedulesKakao(schedules);
               },
               child: Text(
                 '전체공유',
@@ -192,7 +300,7 @@ class _ScheduleState extends State<schedule> {
                     ),
                     ElevatedButton(
                       onPressed: () {
-
+                        shareScheduleKakao(schedule);
                       },
                       child: Text("공유"),
                       style: ElevatedButton.styleFrom(
