@@ -314,10 +314,10 @@ class _ScheduleState extends State<schedule> {
                           onPressed: () async {
                             final success = await DBService().deleteSchedule(schedule.start_time, user_id);
                             if (success) {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => set_schedule()),
-                              );
+                              setState(() {
+                                isLoading = true;
+                              });
+                              await loadSchedules();
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('삭제에 실패했습니다.')),
