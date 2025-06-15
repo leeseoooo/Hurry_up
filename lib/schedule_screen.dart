@@ -6,21 +6,9 @@ import 'package:intl/intl.dart';
 import 'login_screen.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:kakao_flutter_sdk_share/kakao_flutter_sdk_share.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:permission_handler/permission_handler.dart';
-
-class Timetable {
-  String name;
-  String start_time;
-  String finish_time;
-  String place;
-  String ID;
-  double lat;
-  double lng;
-  bool switch_value;
-  Timetable(this.name, this.start_time, this.finish_time, this.place, this.ID,this.lat, this.lng, this.switch_value);
-}
+import 'timetable.dart';
+import 'sharing.dart';
 
 class schedule extends StatefulWidget {
   @override
@@ -124,69 +112,6 @@ class _ScheduleState extends State<schedule> {
     setState(() => isLoading = false);
   }
 
-  Future<void> shareScheduleKakao(Timetable schedule) async {
-    try {
-      String formattedStart = DateFormat('yyyy.MM.dd HH:mm').format(DateTime.parse(schedule.start_time));
-      String formattedFinish = DateFormat('yyyy.MM.dd HH:mm').format(DateTime.parse(schedule.finish_time));
-
-      final template = FeedTemplate(
-        content: Content(
-          title: '${schedule.name}',
-          description: '$formattedStart ~ $formattedFinish\n장소: ${schedule.place}',
-          imageUrl: Uri.parse('https://via.placeholder.com/300x200.png?text=Schedule'),
-          link: Link(
-            webUrl: Uri.parse('https://developers.kakao.com'),
-            mobileWebUrl: Uri.parse('https://developers.kakao.com'),
-          ),
-        ),
-      );
-
-      final isAvailable = await ShareClient.instance.isKakaoTalkSharingAvailable();
-      if (isAvailable) {
-        await ShareClient.instance.shareDefault(template: template);
-      } else {
-        final uri = await WebSharerClient.instance.makeDefaultUrl(template: template);
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      print("카카오 공유 오류: $e");
-    }
-  }
-
-  Future<void> shareAllSchedulesKakao(List<Timetable> allSchedules) async {
-    try {
-      if (allSchedules.isEmpty) return;
-
-      String combinedText = allSchedules.map((schedule) {
-        String formattedStart = DateFormat('yyyy.MM.dd HH:mm').format(DateTime.parse(schedule.start_time));
-        String formattedFinish = DateFormat('yyyy.MM.dd HH:mm').format(DateTime.parse(schedule.finish_time));
-        return "- ${schedule.name}\n  ${formattedStart} ~ ${formattedFinish}\n  장소: ${schedule.place}";
-      }).join("\n\n");
-
-      final template = FeedTemplate(
-        content: Content(
-          title: "오늘의 전체 일정",
-          description: combinedText,
-          imageUrl: Uri.parse('https://via.placeholder.com/300x200.png?text=Schedules'),
-          link: Link(
-            webUrl: Uri.parse('https://developers.kakao.com'),
-            mobileWebUrl: Uri.parse('https://developers.kakao.com'),
-          ),
-        ),
-      );
-
-      final isAvailable = await ShareClient.instance.isKakaoTalkSharingAvailable();
-      if (isAvailable) {
-        await ShareClient.instance.shareDefault(template: template);
-      } else {
-        final uri = await WebSharerClient.instance.makeDefaultUrl(template: template);
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      print("전체 일정 카카오 공유 오류: $e");
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -212,7 +137,7 @@ class _ScheduleState extends State<schedule> {
             ),
             ElevatedButton(
               onPressed: () {
-                shareAllSchedulesKakao(schedules);
+                sharing.shareAllSchedules(schedules);
               },
               child: Text(
                 '전체공유',
@@ -280,7 +205,7 @@ class _ScheduleState extends State<schedule> {
                       children: [
                         ElevatedButton(
                           onPressed: () {
-                            shareScheduleKakao(schedule);
+                            sharing.shareSchedule(schedule);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,

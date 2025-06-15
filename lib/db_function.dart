@@ -1,6 +1,6 @@
 import 'package:mysql_client/mysql_client.dart';
 import 'login_screen.dart';
-import 'schedule_screen.dart';
+import 'timetable.dart';
 
 class DBService {
   Future<MySQLConnection> connect_db() async {
@@ -20,31 +20,6 @@ class DBService {
   Future<void> disconnect_db(MySQLConnection conn) async {
     await conn.close();
     print('DB Disconnected');
-  }
-
-  Future<bool> deleteScheduleFromDB(String startTime) async {
-    final conn = await connect_db();
-    try {
-      var result = await conn.execute(
-        "DELETE FROM timetable WHERE ID = :id AND start_time = :start_time",
-        {
-          'id': user_id,
-          'start_time': startTime,
-        },
-      );
-
-      if (result.affectedRows != null) {
-        return result.affectedRows.toInt() > 0;
-      } else {
-        print("삭제 성공 여부를 판단할 수 없음.");
-        return false;
-      }
-    } catch (e) {
-      print("삭제 중 오류 발생: $e");
-      return false;
-    } finally {
-      await disconnect_db(conn);
-    }
   }
 
   Future<bool> addScheduleToDB({
@@ -219,6 +194,9 @@ class DBService {
           'uid': id,
         },
       );
+    } catch (e) {
+      print("사용자 정보 업데이트 실패: $e");
+      throw Exception("데이터베이스 저장 중 오류가 발생했습니다.");
     } finally {
       await disconnect_db(conn);
     }
@@ -280,6 +258,29 @@ class DBService {
       await disconnect_db(conn);
     }
   }
+
+  Future<bool> checkDuplicateID(String newid) async {
+    final conn = await connect_db();
+    try {
+      final result = await conn.execute(
+        'SELECT COUNT(*) FROM member WHERE ID = :id',
+        {'id': newid},
+      );
+
+      if (result.rows.isNotEmpty) {
+        int count = int.tryParse(result.rows.first.colAt(0) ?? '0') ?? 0;
+        return count > 0;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      print("ID 중복 확인 오류: $e");
+      return true;
+    } finally {
+      await disconnect_db(conn);
+    }
+  }
+
 }
 
 

@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
 import 'db_function.dart';
 import 'schedule_screen.dart';
-import 'login_screen.dart';
 import 'map_screen.dart';
 
 class set_schedule extends StatelessWidget {
@@ -164,12 +162,16 @@ class _addPersonScreenState extends State<addPersonScreen> {
             SizedBox(height: 16),
             ElevatedButton(
                 onPressed: () async {
+                  String name = nameController.text;
                   String start = startDateTimeController.text;
                   String finish = finishDateTimeController.text;
-                  if (start.isEmpty || finish.isEmpty) {
-                    showMessage('시작 시간과 종료 시간을 입력해주세요.');
+                  String place = placeController.text;
+
+                  if (name.isEmpty || start.isEmpty || finish.isEmpty || place.isEmpty || selectedLat == null || selectedLng == null) {
+                    showMessage('모든 항목을 입력해주세요.');
                     return;
                   }
+
                   DateTime startDT = DateTime.parse(start);
                   DateTime finishDT = DateTime.parse(finish);
                   if (startDT.isAfter(finishDT)) {

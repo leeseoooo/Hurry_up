@@ -27,8 +27,6 @@ class join_membershipScreen extends StatelessWidget {
   final TextEditingController birthController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
 
-  late List<List<String>> checkLogin;
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -57,6 +55,24 @@ class join_membershipScreen extends StatelessWidget {
               width: 450,
               child: ElevatedButton(
                 onPressed: () async {
+                  if (newidController.text.isEmpty ||
+                      newpasswordController.text.isEmpty ||
+                      newnameController.text.isEmpty ||
+                      e_mailController.text.isEmpty ||
+                      birthController.text.isEmpty ||
+                      phoneController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('모든 항목을 입력해주세요.')),
+                    );
+                    return;
+                  }
+                  bool isDuplicate = await DBService().checkDuplicateID(newidController.text);
+                  if (isDuplicate) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('이미 존재하는 ID입니다.')),
+                    );
+                    return;
+                  }
                   bool success = await DBService().addPersonToDB(
                     newid: newidController.text,
                     newPassword: newpasswordController.text,
@@ -66,10 +82,16 @@ class join_membershipScreen extends StatelessWidget {
                     phone: phoneController.text,
                   );
 
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => login()),
-                  );
+                  if (success) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => login()),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('회원가입에 실패했습니다.')),
+                    );
+                  }
                 },
                 child: Text(
                   '작성 완료!',

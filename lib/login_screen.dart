@@ -34,7 +34,6 @@ class login extends StatelessWidget {
 class Log_State extends StatelessWidget {
   final TextEditingController idController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  late List<List<String>> checkLogin;
 
   @override
   Widget build(BuildContext context) {
