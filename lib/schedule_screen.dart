@@ -1,3 +1,4 @@
+//스케줄 화면
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'addSchedule.dart';

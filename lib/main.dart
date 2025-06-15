@@ -1,3 +1,8 @@
+/*
+과목: 오픈소스SW설계
+이름: 이서현
+학번: 22212115
+ */
 import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
