@@ -1,3 +1,4 @@
+//스케줄 추가
 import 'package:flutter/material.dart';
 import 'db_function.dart';
 import 'schedule_screen.dart';
